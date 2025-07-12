@@ -19,7 +19,7 @@ public class AmpsMessageOutboundProcessor
     private String ampsServerUrl;
     @Value("${amps.client.name}")
     private String ampsClientName;
-    @Value("${amps.topic.order.exchange.outbound}")
+    @Value("${amps.topic.orders.exch.outbound}")
     private String exchangeOutboundTopic;
 
     @PostConstruct
