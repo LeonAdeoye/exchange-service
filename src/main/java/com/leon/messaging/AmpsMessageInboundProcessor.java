@@ -24,7 +24,7 @@ public class AmpsMessageInboundProcessor implements MessageHandler {
     private String ampsServerUrl;
     @Value("${amps.client.name}")
     private String ampsClientName;
-    @Value("${amps.topic.exchange.inbound}")
+    @Value("${amps.topic.order.exchange.inbound}")
     private String exchangeInboundTopic;
     @Autowired
     private final ObjectMapper objectMapper;

@@ -19,7 +19,7 @@ public class AmpsMessageOutboundProcessor
     private String ampsServerUrl;
     @Value("${amps.client.name}")
     private String ampsClientName;
-    @Value("${amps.topic.exchange.outbound}")
+    @Value("${amps.topic.order.exchange.outbound}")
     private String exchangeOutboundTopic;
 
     @PostConstruct
@@ -38,7 +38,7 @@ public class AmpsMessageOutboundProcessor
         }
     }
 
-    public void sendOrder(Order order)
+    public void sendOrderToOMS(Order order)
     {
         try
         {
@@ -54,8 +54,8 @@ public class AmpsMessageOutboundProcessor
     public void sendOrderBookState(PriorityQueue<Order> buyOrders, PriorityQueue<Order> sellOrders){
         try
         {
-            buyOrders.forEach(this::sendOrder);
-            sellOrders.forEach(this::sendOrder);
+            buyOrders.forEach(this::sendOrderToOMS);
+            sellOrders.forEach(this::sendOrderToOMS);
         }
         catch (Exception e)
         {

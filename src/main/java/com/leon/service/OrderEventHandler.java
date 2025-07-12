@@ -1,5 +1,6 @@
 package com.leon.service;
 
+import com.leon.messaging.AmpsMessageOutboundProcessor;
 import com.leon.model.Order;
 import com.leon.model.OrderEvent;
 import com.lmax.disruptor.EventHandler;
@@ -16,6 +17,8 @@ public class OrderEventHandler implements EventHandler<OrderEvent>
     private static final Logger log = LoggerFactory.getLogger(OrderEventHandler.class);
     @Autowired
     private OrderMatchingService orderMatchingService;
+    @Autowired
+    private AmpsMessageOutboundProcessor ampsMessageOutboundProcessor;
 
 
     @Override
@@ -34,5 +37,6 @@ public class OrderEventHandler implements EventHandler<OrderEvent>
     private void processOrder(Order order)
     {
         orderMatchingService.placeOrder(order);
+        ampsMessageOutboundProcessor.sendOrderToOMS(order);
     }
 } 

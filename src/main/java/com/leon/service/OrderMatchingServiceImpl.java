@@ -2,6 +2,7 @@ package com.leon.service;
 
 import com.leon.messaging.AmpsMessageOutboundProcessor;
 import com.leon.model.Order;
+import com.leon.model.Side;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +30,7 @@ public class OrderMatchingServiceImpl implements OrderMatchingService
 
     public void placeOrder(Order order)
     {
-        if (order.getSide() == Order.Side.BUY)
+        if (order.getSide() == Side.BUY)
             matchOrder(order, sellOrders, buyOrders, true);
         else
             matchOrder(order, buyOrders, sellOrders, false);
