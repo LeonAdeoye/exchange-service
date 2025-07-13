@@ -40,11 +40,12 @@ public class OrderEventHandler implements EventHandler<OrderEvent>
 
     private void processOrder(Order order)
     {
-        transitionToNewState(order, OrderStateEvents.EXCH_APPROVE);
-        ampsMessageOutboundProcessor.sendOrderToOMS(order);
-
-        if(orderMatchingService.placeOrder(order))
+        if(order.getState() == OrderStates.PENDING_EXCH)
+        {
+            transitionToNewState(order, OrderStateEvents.EXCH_APPROVE);
             ampsMessageOutboundProcessor.sendOrderToOMS(order);
+        }
+        orderMatchingService.placeOrder(order);
     }
 
     public void transitionToNewState(Order order, OrderStateEvents actionEvent)

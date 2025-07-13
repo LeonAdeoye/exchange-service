@@ -42,6 +42,8 @@ public class AmpsMessageOutboundProcessor
     {
         try
         {
+            order.setCurrentSource("EXCHANGE_SERVICE");
+            order.setTargetSource("ORDER_MANAGEMENT_SERVICE");
             ampsClient.publish(exchangeOutboundTopic, order.toJSON());
             log.info("Published order message: {}", order);
         }

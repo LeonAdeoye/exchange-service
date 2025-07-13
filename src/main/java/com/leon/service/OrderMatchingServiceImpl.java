@@ -29,20 +29,19 @@ public class OrderMatchingServiceImpl implements OrderMatchingService
 
     private PriorityQueue<Order> sellOrders = new PriorityQueue<>(sellOrderComparator);
 
-    public boolean placeOrder(Order order)
+    public void placeOrder(Order order)
     {
         if (order.getSide() == Side.BUY)
-            return matchOrder(order, sellOrders, buyOrders, true);
+            matchOrder(order, sellOrders, buyOrders, true);
         else
-            return matchOrder(order, buyOrders, sellOrders, false);
+            matchOrder(order, buyOrders, sellOrders, false);
     }
 
-    private boolean matchOrder(Order incoming, PriorityQueue<Order> oppositeQueue, PriorityQueue<Order> sameQueue, boolean isBuy)
+    private void matchOrder(Order incoming, PriorityQueue<Order> oppositeQueue, PriorityQueue<Order> sameQueue, boolean isBuy)
     {
-        boolean orderMatched = false;
-
         while(!oppositeQueue.isEmpty() && incoming.getPending() > 0)
         {
+            // TODO Need to handle two buy and sell orders from the same client.
             Order match = oppositeQueue.peek();
             boolean canTrade = isBuy ? incoming.getPrice() >= match.getPrice() : incoming.getPrice() <= match.getPrice();
             if(canTrade)
@@ -52,10 +51,11 @@ public class OrderMatchingServiceImpl implements OrderMatchingService
                 match.setPending(match.getPending() - tradeQty);
                 incoming.setExecuted(incoming.getExecuted() + tradeQty);
                 match.setExecuted(match.getExecuted() + tradeQty);
-                if (match.getPending() == 0 && match.getQuantity() == match.getExecuted())
-                    oppositeQueue.poll();
+                ampsMessageOutboundProcessor.sendOrderToOMS(incoming);
+                ampsMessageOutboundProcessor.sendOrderToOMS(match);
                 logger.info("Order matched: Incoming ID={} matched ID={}, executed: {}, pending: {}, original quantity: {}", incoming.getOrderId(), match.getOrderId(), incoming.getExecuted(), incoming.getPending(), incoming.getQuantity());
-                orderMatched = true;
+                if (Order.isFullyFilled(match))
+                    oppositeQueue.poll();
             }
             else
                 break;
@@ -63,7 +63,5 @@ public class OrderMatchingServiceImpl implements OrderMatchingService
 
         if(incoming.getPending() > 0)
             sameQueue.add(incoming);
-
-        return orderMatched;
     }
 }
