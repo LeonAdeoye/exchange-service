@@ -4,5 +4,5 @@ import com.leon.model.Order;
 
 public interface OrderMatchingService
 {
-    void placeOrder(Order order);
+    boolean placeOrder(Order order);
 }

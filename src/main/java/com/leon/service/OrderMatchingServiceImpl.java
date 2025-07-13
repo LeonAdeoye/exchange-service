@@ -2,6 +2,7 @@ package com.leon.service;
 
 import com.leon.messaging.AmpsMessageOutboundProcessor;
 import com.leon.model.Order;
+import com.leon.model.OrderStates;
 import com.leon.model.Side;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,36 +29,41 @@ public class OrderMatchingServiceImpl implements OrderMatchingService
 
     private PriorityQueue<Order> sellOrders = new PriorityQueue<>(sellOrderComparator);
 
-    public void placeOrder(Order order)
+    public boolean placeOrder(Order order)
     {
         if (order.getSide() == Side.BUY)
-            matchOrder(order, sellOrders, buyOrders, true);
+            return matchOrder(order, sellOrders, buyOrders, true);
         else
-            matchOrder(order, buyOrders, sellOrders, false);
+            return matchOrder(order, buyOrders, sellOrders, false);
     }
 
-    private void matchOrder(Order incoming, PriorityQueue<Order> oppositeQueue, PriorityQueue<Order> sameQueue, boolean isBuy) {
-        while(!oppositeQueue.isEmpty() && incoming.getQuantity() > 0)
+    private boolean matchOrder(Order incoming, PriorityQueue<Order> oppositeQueue, PriorityQueue<Order> sameQueue, boolean isBuy)
+    {
+        boolean orderMatched = false;
+
+        while(!oppositeQueue.isEmpty() && incoming.getPending() > 0)
         {
             Order match = oppositeQueue.peek();
             boolean canTrade = isBuy ? incoming.getPrice() >= match.getPrice() : incoming.getPrice() <= match.getPrice();
             if(canTrade)
             {
-                int tradeQty = Math.min(incoming.getQuantity(), match.getQuantity());
-                incoming.setQuantity(incoming.getQuantity() - tradeQty);
-                match.setQuantity(match.getQuantity() - tradeQty);
+                int tradeQty = Math.min(incoming.getPending(), match.getPending());
+                incoming.setPending(incoming.getPending() - tradeQty);
+                match.setPending(match.getPending() - tradeQty);
+                incoming.setExecuted(incoming.getExecuted() + tradeQty);
+                match.setExecuted(match.getExecuted() + tradeQty);
+                if (match.getPending() == 0 && match.getQuantity() == match.getExecuted())
+                    oppositeQueue.poll();
+                logger.info("Order matched: Incoming ID={} matched ID={}, executed: {}, pending: {}, original quantity: {}", incoming.getOrderId(), match.getOrderId(), incoming.getExecuted(), incoming.getPending(), incoming.getQuantity());
+                orderMatched = true;
             }
             else
                 break;
         }
-        if(incoming.getQuantity() > 0)
-            sameQueue.add(incoming);
-    }
 
-    public void publishOrderBookState()
-    {
-        logger.info("Buy Orders: {}", buyOrders);
-        logger.info("Sell Orders: {}", sellOrders);
-        ampsMessageOutboundProcessor.sendOrderBookState(buyOrders, sellOrders);
+        if(incoming.getPending() > 0)
+            sameQueue.add(incoming);
+
+        return orderMatched;
     }
 }

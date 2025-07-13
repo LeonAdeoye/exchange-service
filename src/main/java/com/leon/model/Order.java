@@ -44,6 +44,8 @@ public class Order
     private String exchangeAcronym;
     private Side side;
     private int quantity;
+    private int pending;
+    private int executed;
     private String priceType;
     private double price;
     private String tif;
@@ -72,8 +74,6 @@ public class Order
     private double averagePrice;
     private double adv20;
     private String executionTrigger;
-    private int pending;
-    private int executed;
     private double executedNotionalValueInUSD;
     private double orderNotionalValueInUSD;
     private double orderNotionalValueInLocal;
@@ -90,6 +90,10 @@ public class Order
     public static boolean isParentOrder(Order order)
     {
         return order.getParentOrderId().equals(order.getOrderId());
+    }
+    public static boolean isChildOrder(Order order)
+    {
+        return !order.getParentOrderId().equals(order.getOrderId());
     }
 
     public String toJSON()

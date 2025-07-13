@@ -1,9 +1,6 @@
 package com.leon.messaging;
 
-import com.crankuptheamps.client.Client;
-import com.crankuptheamps.client.Command;
-import com.crankuptheamps.client.Message;
-import com.crankuptheamps.client.MessageHandler;
+import com.crankuptheamps.client.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer;
@@ -13,6 +10,7 @@ import com.leon.service.ExchangeServiceImpl;
 import com.leon.validation.OrderMessageValidator;
 import com.leon.validation.ValidationResult;
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,13 +34,13 @@ public class AmpsMessageInboundProcessor implements MessageHandler
     private String ampsClientName;
     @Value("${amps.topic.orders.exch.inbound}")
     private String exchangeInboundTopic;
-    @Autowired
     private final ObjectMapper objectMapper = new ObjectMapper();
     @Autowired
     private final OrderMessageValidator messageValidator;
     @Autowired
     private final ExchangeServiceImpl exchangeService;
     private Client ampsClient;
+    private CommandId exchangeInboundTopicId;
 
 
     @PostConstruct
@@ -59,12 +57,30 @@ public class AmpsMessageInboundProcessor implements MessageHandler
             javaTimeModule.addDeserializer(LocalDate.class, new LocalDateDeserializer(dateFormatter));
             javaTimeModule.addDeserializer(LocalTime.class, new LocalTimeDeserializer(timeFormatter));
             objectMapper.registerModule(javaTimeModule);
-            ampsClient.executeAsync(new Command("subscribe").setTopic(exchangeInboundTopic), this);
+            CommandId exchangeInboundTopicId = ampsClient.executeAsync(new Command("subscribe").setTopic(exchangeInboundTopic), this);
         }
         catch (Exception e)
         {
             log.error("ERR-007: Failed to initialize AMPS client", e);
             throw e;
+        }
+    }
+
+    @PreDestroy
+    public void shutdown()
+    {
+        try
+        {
+            if (ampsClient != null)
+            {
+                ampsClient.unsubscribe(exchangeInboundTopicId);
+                ampsClient.disconnect();
+                log.info("Unsubscribed from AMPS topics and disconnected.");
+            }
+        }
+        catch (Exception e)
+        {
+            log.error("ERR-010: Failed to unsubscribe or disconnect from AMPS", e);
         }
     }
 
