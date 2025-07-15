@@ -1,6 +1,7 @@
 package com.leon.messaging;
 
 import com.crankuptheamps.client.Client;
+import com.leon.model.MessageType;
 import com.leon.model.Order;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
@@ -8,7 +9,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.util.PriorityQueue;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.UUID;
 
 @Component
 public class AmpsMessageOutboundProcessor
@@ -19,8 +22,8 @@ public class AmpsMessageOutboundProcessor
     private String ampsServerUrl;
     @Value("${amps.client.name}")
     private String ampsClientName;
-    @Value("${amps.topic.orders.exch.outbound}")
-    private String exchangeOutboundTopic;
+    @Value("${amps.topic.outbound.exchange}")
+    private String outboundExchangeTopic;
 
     @PostConstruct
     public void initialize() throws Exception
@@ -38,30 +41,43 @@ public class AmpsMessageOutboundProcessor
         }
     }
 
+    public void sendExecutionToOMS(Order order)
+    {
+        Order execution = new Order();
+        try
+        {
+            execution.setMessageType(MessageType.EXECUTION_REPORT);
+            execution.setParentOrderId(order.getOrderId());
+            execution.setPrice(order.getPrice());
+            execution.setInstrumentCode(order.getInstrumentCode());
+            execution.setQuantity(order.getExecuted());
+            execution.setSide(order.getSide());
+            execution.setOrderId(UUID.randomUUID().toString());
+            execution.setExecutedTime(LocalTime.now());
+            execution.setTradeDate(LocalDate.now());
+            execution.setCurrentSource("EXCHANGE_SERVICE");
+            execution.setTargetSource("ORDER_MANAGEMENT_SERVICE");
+            ampsClient.publish(outboundExchangeTopic, execution.toJSON());
+            log.info("Published execution message: {}", order);
+        }
+        catch (Exception e)
+        {
+            log.error("ERR-902: Failed to publish execution message for order: {}", order, e);
+        }
+    }
+
     public void sendOrderToOMS(Order order)
     {
         try
         {
             order.setCurrentSource("EXCHANGE_SERVICE");
             order.setTargetSource("ORDER_MANAGEMENT_SERVICE");
-            ampsClient.publish(exchangeOutboundTopic, order.toJSON());
+            ampsClient.publish(outboundExchangeTopic, order.toJSON());
             log.info("Published order message: {}", order);
         }
         catch (Exception e)
         {
-            log.error("ERR-902: Failed to publish order message: {}", order, e);
-        }
-    }
-
-    public void sendOrderBookState(PriorityQueue<Order> buyOrders, PriorityQueue<Order> sellOrders){
-        try
-        {
-            buyOrders.forEach(this::sendOrderToOMS);
-            sellOrders.forEach(this::sendOrderToOMS);
-        }
-        catch (Exception e)
-        {
-            log.error("ERR-903: Failed to publish order book state", e);
+            log.error("ERR-902: Failed to publish order message for order: {}", order, e);
         }
     }
 }

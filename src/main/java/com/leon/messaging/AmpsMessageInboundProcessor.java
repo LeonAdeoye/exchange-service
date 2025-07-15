@@ -17,7 +17,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -32,15 +31,15 @@ public class AmpsMessageInboundProcessor implements MessageHandler
     private String ampsServerUrl;
     @Value("${amps.client.name}")
     private String ampsClientName;
-    @Value("${amps.topic.orders.exch.inbound}")
-    private String exchangeInboundTopic;
+    @Value("${amps.topic.inbound.exchange}")
+    private String inboundExchangeTopic;
     private final ObjectMapper objectMapper = new ObjectMapper();
     @Autowired
     private final OrderMessageValidator messageValidator;
     @Autowired
     private final ExchangeServiceImpl exchangeService;
     private Client ampsClient;
-    private CommandId exchangeInboundTopicId;
+    private CommandId inboundExchangeTopicId;
 
 
     @PostConstruct
@@ -57,7 +56,7 @@ public class AmpsMessageInboundProcessor implements MessageHandler
             javaTimeModule.addDeserializer(LocalDate.class, new LocalDateDeserializer(dateFormatter));
             javaTimeModule.addDeserializer(LocalTime.class, new LocalTimeDeserializer(timeFormatter));
             objectMapper.registerModule(javaTimeModule);
-            CommandId exchangeInboundTopicId = ampsClient.executeAsync(new Command("subscribe").setTopic(exchangeInboundTopic), this);
+            inboundExchangeTopicId = ampsClient.executeAsync(new Command("subscribe").setTopic(inboundExchangeTopic), this);
         }
         catch (Exception e)
         {
@@ -73,7 +72,7 @@ public class AmpsMessageInboundProcessor implements MessageHandler
         {
             if (ampsClient != null)
             {
-                ampsClient.unsubscribe(exchangeInboundTopicId);
+                ampsClient.unsubscribe(inboundExchangeTopicId);
                 ampsClient.disconnect();
                 log.info("Unsubscribed from AMPS topics and disconnected.");
             }

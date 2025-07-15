@@ -2,13 +2,14 @@ package com.leon.service;
 
 import com.leon.messaging.AmpsMessageOutboundProcessor;
 import com.leon.model.Order;
-import com.leon.model.OrderStates;
 import com.leon.model.Side;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.PriorityQueue;
 
 @Service
@@ -18,50 +19,60 @@ public class OrderMatchingServiceImpl implements OrderMatchingService
     @Autowired
     private AmpsMessageOutboundProcessor ampsMessageOutboundProcessor;
 
-    Comparator<Order> buyOrderComparator = Comparator
+    private Comparator<Order> buyOrderComparator = Comparator
             .comparingDouble(Order::getPrice).reversed()
             .thenComparing(Order::getArrivalTime);
-    Comparator<Order> sellOrderComparator = Comparator
+    private Comparator<Order> sellOrderComparator = Comparator
             .comparingDouble(Order::getPrice)
             .thenComparing(Order::getArrivalTime);
 
-    private PriorityQueue<Order> buyOrders = new PriorityQueue<>(buyOrderComparator);
-
-    private PriorityQueue<Order> sellOrders = new PriorityQueue<>(sellOrderComparator);
+    private Map<String, PriorityQueue<Order>> buyOrderBooks = new HashMap<>();
+    private Map<String, PriorityQueue<Order>> sellOrderBooks = new HashMap<>();
 
     public void placeOrder(Order order)
     {
+        String instrument = order.getInstrumentCode();
+        buyOrderBooks.putIfAbsent(instrument, new PriorityQueue<>(buyOrderComparator));
+        sellOrderBooks.putIfAbsent(instrument, new PriorityQueue<>(sellOrderComparator));
+
         if (order.getSide() == Side.BUY)
-            matchOrder(order, sellOrders, buyOrders, true);
+            matchOrder(order, sellOrderBooks.get(instrument), buyOrderBooks.get(instrument), true);
         else
-            matchOrder(order, buyOrders, sellOrders, false);
+            matchOrder(order, buyOrderBooks.get(instrument), sellOrderBooks.get(instrument), false);
     }
 
-    private void matchOrder(Order incoming, PriorityQueue<Order> oppositeQueue, PriorityQueue<Order> sameQueue, boolean isBuy)
+    private void matchOrder(Order incomingOrder, PriorityQueue<Order> oppositeQueue,
+                            PriorityQueue<Order> sameQueue, boolean isBuy)
     {
-        while(!oppositeQueue.isEmpty() && incoming.getPending() > 0)
+        while (!oppositeQueue.isEmpty() && incomingOrder.getPending() > 0)
         {
-            // TODO Need to handle two buy and sell orders from the same client.
-            Order match = oppositeQueue.peek();
-            boolean canTrade = isBuy ? incoming.getPrice() >= match.getPrice() : incoming.getPrice() <= match.getPrice();
-            if(canTrade)
+            Order matchingOrder = oppositeQueue.peek();
+
+            boolean canTrade = isBuy ? incomingOrder.getPrice() >= matchingOrder.getPrice() : incomingOrder.getPrice() <= matchingOrder.getPrice();
+
+            if (canTrade)
             {
-                int tradeQty = Math.min(incoming.getPending(), match.getPending());
-                incoming.setPending(incoming.getPending() - tradeQty);
-                match.setPending(match.getPending() - tradeQty);
-                incoming.setExecuted(incoming.getExecuted() + tradeQty);
-                match.setExecuted(match.getExecuted() + tradeQty);
-                ampsMessageOutboundProcessor.sendOrderToOMS(incoming);
-                ampsMessageOutboundProcessor.sendOrderToOMS(match);
-                logger.info("Order matched: Incoming ID={} matched ID={}, executed: {}, pending: {}, original quantity: {}", incoming.getOrderId(), match.getOrderId(), incoming.getExecuted(), incoming.getPending(), incoming.getQuantity());
-                if (Order.isFullyFilled(match))
+                int tradeQty = Math.min(incomingOrder.getPending(), matchingOrder.getPending());
+
+                incomingOrder.setPending(incomingOrder.getPending() - tradeQty);
+                incomingOrder.setExecuted(incomingOrder.getExecuted() + tradeQty);
+                matchingOrder.setPending(matchingOrder.getPending() - tradeQty);
+                matchingOrder.setExecuted(matchingOrder.getExecuted() + tradeQty);
+
+                ampsMessageOutboundProcessor.sendExecutionToOMS(incomingOrder);
+                ampsMessageOutboundProcessor.sendExecutionToOMS(matchingOrder);
+
+                logger.info("Order matched: Incoming ID={} matched ID={}, incoming order executed: {}, incoming order pending: {}, matching order pending: {}",
+                    incomingOrder.getOrderId(), matchingOrder.getOrderId(), tradeQty, incomingOrder.getPending(), matchingOrder.getPending());
+
+                if (Order.isFullyFilled(matchingOrder))
                     oppositeQueue.poll();
             }
             else
                 break;
         }
 
-        if(incoming.getPending() > 0)
-            sameQueue.add(incoming);
+        if (incomingOrder.getPending() > 0)
+            sameQueue.add(incomingOrder);
     }
 }
