@@ -41,7 +41,7 @@ public class AmpsMessageOutboundProcessor
         }
     }
 
-    public void sendExecutionToOMS(Order order)
+    public void sendExecutionToOMS(Order order, int tradedQuantity)
     {
         Order execution = new Order();
         try
@@ -50,7 +50,7 @@ public class AmpsMessageOutboundProcessor
             execution.setParentOrderId(order.getOrderId());
             execution.setPrice(order.getPrice());
             execution.setInstrumentCode(order.getInstrumentCode());
-            execution.setQuantity(order.getExecuted());
+            execution.setQuantity(tradedQuantity);
             execution.setSide(order.getSide());
             execution.setOrderId(UUID.randomUUID().toString());
             execution.setExecutedTime(LocalTime.now());

@@ -52,18 +52,18 @@ public class OrderMatchingServiceImpl implements OrderMatchingService
 
             if (canTrade)
             {
-                int tradeQty = Math.min(incomingOrder.getPending(), matchingOrder.getPending());
+                int tradeQuantity = Math.min(incomingOrder.getPending(), matchingOrder.getPending());
 
-                incomingOrder.setPending(incomingOrder.getPending() - tradeQty);
-                incomingOrder.setExecuted(incomingOrder.getExecuted() + tradeQty);
-                matchingOrder.setPending(matchingOrder.getPending() - tradeQty);
-                matchingOrder.setExecuted(matchingOrder.getExecuted() + tradeQty);
+                incomingOrder.setPending(incomingOrder.getPending() - tradeQuantity);
+                incomingOrder.setExecuted(incomingOrder.getExecuted() + tradeQuantity);
+                matchingOrder.setPending(matchingOrder.getPending() - tradeQuantity);
+                matchingOrder.setExecuted(matchingOrder.getExecuted() + tradeQuantity);
 
-                ampsMessageOutboundProcessor.sendExecutionToOMS(incomingOrder);
-                ampsMessageOutboundProcessor.sendExecutionToOMS(matchingOrder);
+                ampsMessageOutboundProcessor.sendExecutionToOMS(incomingOrder, tradeQuantity);
+                ampsMessageOutboundProcessor.sendExecutionToOMS(matchingOrder, tradeQuantity);
 
                 logger.info("Order matched: Incoming ID={} matched ID={}, incoming order executed: {}, incoming order pending: {}, matching order pending: {}",
-                    incomingOrder.getOrderId(), matchingOrder.getOrderId(), tradeQty, incomingOrder.getPending(), matchingOrder.getPending());
+                    incomingOrder.getOrderId(), matchingOrder.getOrderId(), tradeQuantity, incomingOrder.getPending(), matchingOrder.getPending());
 
                 if (Order.isFullyFilled(matchingOrder))
                     oppositeQueue.poll();
