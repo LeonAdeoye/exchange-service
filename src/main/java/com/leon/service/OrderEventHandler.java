@@ -44,8 +44,14 @@ public class OrderEventHandler implements EventHandler<OrderEvent>
         {
             transitionToNewState(order, OrderStateEvents.EXCH_APPROVE);
             ampsMessageOutboundProcessor.sendOrderToOMS(order);
+            orderMatchingService.placeOrder(order);
+            return;
         }
-        orderMatchingService.placeOrder(order);
+        if((order.getState() == OrderStates.FULLY_FILLED || order.getState() == OrderStates.PARTIALLY_FILLED) && order.getActionEvent() == OrderStateEvents.DESK_DONE)
+        {
+            transitionToNewState(order, OrderStateEvents.DESK_DONE);
+            orderMatchingService.doneForDay(order);
+        }
     }
 
     public void transitionToNewState(Order order, OrderStateEvents actionEvent)

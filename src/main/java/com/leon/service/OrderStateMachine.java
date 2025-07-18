@@ -34,6 +34,8 @@ public class OrderStateMachine
 
         transitionMap.put(Pair.of(OrderStates.REPLACED_BY_EXCH, OrderStateEvents.FULL_FILL), OrderStates.FULLY_FILLED);
         transitionMap.put(Pair.of(OrderStates.REPLACED_BY_EXCH, OrderStateEvents.PARTIAL_FILL), OrderStates.PARTIALLY_FILLED);
+        transitionMap.put(Pair.of(OrderStates.FULLY_FILLED, OrderStateEvents.DESK_DONE), OrderStates.DONE_FOR_DAY);
+        transitionMap.put(Pair.of(OrderStates.PARTIALLY_FILLED, OrderStateEvents.DESK_DONE), OrderStates.DONE_FOR_DAY);
     }
 
     public static Optional<OrderStates> getNextState(OrderStates currentState, OrderStateEvents event) {

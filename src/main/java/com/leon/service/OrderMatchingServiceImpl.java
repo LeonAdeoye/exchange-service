@@ -41,6 +41,14 @@ public class OrderMatchingServiceImpl implements OrderMatchingService
             matchOrder(order, buyOrderBooks.get(instrument), sellOrderBooks.get(instrument), false);
     }
 
+    public void doneForDay(Order order)
+    {
+        if( order.getSide() == Side.BUY)
+            buyOrderBooks.values().forEach(queue -> queue.removeIf(o -> o.getOrderId().equals(order.getOrderId())));
+        else
+            sellOrderBooks.values().forEach(queue -> queue.removeIf(o -> o.getOrderId().equals(order.getOrderId())));
+    }
+
     private void matchOrder(Order incomingOrder, PriorityQueue<Order> oppositeQueue,
                             PriorityQueue<Order> sameQueue, boolean isBuy)
     {

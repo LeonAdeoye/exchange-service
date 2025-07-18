@@ -5,4 +5,5 @@ import com.leon.model.Order;
 public interface OrderMatchingService
 {
     void placeOrder(Order order);
+    void doneForDay(Order order);
 }

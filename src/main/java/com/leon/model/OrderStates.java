@@ -19,7 +19,8 @@ public enum OrderStates {
     FULLY_FILLED("Fully Filled"),
     CANCEL_REJECTED_BY_EXCH("Cancel Rejected by Exchange"),
     CANCELLED_BY_DESK("Cancelled by Desk"),
-    REPLACED_BY_DESK("Replaced by Desk");
+    REPLACED_BY_DESK("Replaced by Desk"),
+    DONE_FOR_DAY("Done For Day");
 
     private final String orderStateDescription;
 

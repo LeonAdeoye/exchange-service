@@ -12,7 +12,8 @@ public enum OrderStateEvents {
     FULL_FILL("Full Fill"),
     DESK_CANCEL("Desk Cancel"),
     PARTIAL_FILL("Partial Fill"),
-    DESK_REPLACE("Desk Replace");
+    DESK_REPLACE("Desk Replace"),
+    DESK_DONE("Desk Done For Day");
 
     private final String orderStateEventDescription;
 
