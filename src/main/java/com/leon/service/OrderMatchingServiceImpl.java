@@ -43,10 +43,11 @@ public class OrderMatchingServiceImpl implements OrderMatchingService
 
     public void doneForDay(Order order)
     {
+        String instrumentCode = order.getInstrumentCode();
         if( order.getSide() == Side.BUY)
-            buyOrderBooks.values().forEach(queue -> queue.removeIf(o -> o.getOrderId().equals(order.getOrderId())));
+            buyOrderBooks.get(instrumentCode).removeIf(o -> o.getOrderId().equals(order.getOrderId()));
         else
-            sellOrderBooks.values().forEach(queue -> queue.removeIf(o -> o.getOrderId().equals(order.getOrderId())));
+            sellOrderBooks.get(instrumentCode).removeIf(o -> o.getOrderId().equals(order.getOrderId()));
     }
 
     private void matchOrder(Order incomingOrder, PriorityQueue<Order> oppositeQueue,
