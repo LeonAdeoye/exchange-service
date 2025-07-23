@@ -50,8 +50,7 @@ public class OrderMatchingServiceImpl implements OrderMatchingService
             sellOrderBooks.get(instrumentCode).removeIf(o -> o.getOrderId().equals(order.getOrderId()));
     }
 
-    private void matchOrder(Order incomingOrder, PriorityQueue<Order> oppositeQueue,
-                            PriorityQueue<Order> sameQueue, boolean isBuy)
+    private void matchOrder(Order incomingOrder, PriorityQueue<Order> oppositeQueue, PriorityQueue<Order> sameQueue, boolean isBuy)
     {
         while (!oppositeQueue.isEmpty() && incomingOrder.getPending() > 0)
         {

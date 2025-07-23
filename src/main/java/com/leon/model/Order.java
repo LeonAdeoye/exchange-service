@@ -57,6 +57,7 @@ public class Order
     private int quantity;
     private int pending;
     private int executed;
+    private int sliced;
     private String priceType;
     private double price;
     private String tif;
