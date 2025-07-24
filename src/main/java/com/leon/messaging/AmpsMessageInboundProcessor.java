@@ -5,9 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer;
 import com.fasterxml.jackson.datatype.jsr310.deser.LocalTimeDeserializer;
-import com.leon.model.Order;
+import com.leon.model.MessageData;
 import com.leon.service.ExchangeServiceImpl;
-import com.leon.validation.OrderMessageValidator;
+import com.leon.validation.MessageDataValidator;
 import com.leon.validation.ValidationResult;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -35,7 +35,7 @@ public class AmpsMessageInboundProcessor implements MessageHandler
     private String inboundExchangeTopic;
     private final ObjectMapper objectMapper = new ObjectMapper();
     @Autowired
-    private final OrderMessageValidator messageValidator;
+    private final MessageDataValidator messageValidator;
     @Autowired
     private final ExchangeServiceImpl exchangeService;
     private Client ampsClient;
@@ -96,14 +96,14 @@ public class AmpsMessageInboundProcessor implements MessageHandler
                 return;
             }
 
-            Order order = objectMapper.readValue(message.getData(), Order.class);
-            log.info("Received valid order message: {}", order);
-            exchangeService.processOrder(order);
+            MessageData messageData = objectMapper.readValue(message.getData(), MessageData.class);
+            log.info("Received valid message data: {}", messageData);
+            exchangeService.processOrder(messageData);
 
         }
         catch (Exception e)
         {
-            log.error("ERR-009: Failed to process message", e);
+            log.error("ERR-009: Failed to process message data", e);
         }
     }
 } 

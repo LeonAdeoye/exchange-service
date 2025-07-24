@@ -1,9 +1,9 @@
 package com.leon.service;
 
-import com.leon.model.Order;
+import com.leon.model.MessageData;
 
 public interface OrderMatchingService
 {
-    void placeOrder(Order order);
-    void doneForDay(Order order);
+    void placeOrder(MessageData messageData);
+    void doneForDay(MessageData messageData);
 }

@@ -1,7 +1,7 @@
 package com.leon.service;
 
 import com.leon.messaging.AmpsMessageOutboundProcessor;
-import com.leon.model.Order;
+import com.leon.model.MessageData;
 import com.leon.model.Side;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,68 +19,68 @@ public class OrderMatchingServiceImpl implements OrderMatchingService
     @Autowired
     private AmpsMessageOutboundProcessor ampsMessageOutboundProcessor;
 
-    private Comparator<Order> buyOrderComparator = Comparator
-            .comparingDouble(Order::getPrice).reversed()
-            .thenComparing(Order::getArrivalTime);
-    private Comparator<Order> sellOrderComparator = Comparator
-            .comparingDouble(Order::getPrice)
-            .thenComparing(Order::getArrivalTime);
+    private Comparator<MessageData> buyOrderComparator = Comparator
+            .comparingDouble(MessageData::getPrice).reversed()
+            .thenComparing(MessageData::getArrivalTime);
+    private Comparator<MessageData> sellOrderComparator = Comparator
+            .comparingDouble(MessageData::getPrice)
+            .thenComparing(MessageData::getArrivalTime);
 
-    private Map<String, PriorityQueue<Order>> buyOrderBooks = new HashMap<>();
-    private Map<String, PriorityQueue<Order>> sellOrderBooks = new HashMap<>();
+    private Map<String, PriorityQueue<MessageData>> buyOrderBooks = new HashMap<>();
+    private Map<String, PriorityQueue<MessageData>> sellOrderBooks = new HashMap<>();
 
-    public void placeOrder(Order order)
+    public void placeOrder(MessageData messageData)
     {
-        String instrument = order.getInstrumentCode();
+        String instrument = messageData.getInstrumentCode();
         buyOrderBooks.putIfAbsent(instrument, new PriorityQueue<>(buyOrderComparator));
         sellOrderBooks.putIfAbsent(instrument, new PriorityQueue<>(sellOrderComparator));
 
-        if (order.getSide() == Side.BUY)
-            matchOrder(order, sellOrderBooks.get(instrument), buyOrderBooks.get(instrument), true);
+        if (messageData.getSide() == Side.BUY)
+            matchOrder(messageData, sellOrderBooks.get(instrument), buyOrderBooks.get(instrument), true);
         else
-            matchOrder(order, buyOrderBooks.get(instrument), sellOrderBooks.get(instrument), false);
+            matchOrder(messageData, buyOrderBooks.get(instrument), sellOrderBooks.get(instrument), false);
     }
 
-    public void doneForDay(Order order)
+    public void doneForDay(MessageData messageData)
     {
-        String instrumentCode = order.getInstrumentCode();
-        if( order.getSide() == Side.BUY)
-            buyOrderBooks.get(instrumentCode).removeIf(o -> o.getOrderId().equals(order.getOrderId()));
+        String instrumentCode = messageData.getInstrumentCode();
+        if( messageData.getSide() == Side.BUY)
+            buyOrderBooks.get(instrumentCode).removeIf(o -> o.getOrderId().equals(messageData.getOrderId()));
         else
-            sellOrderBooks.get(instrumentCode).removeIf(o -> o.getOrderId().equals(order.getOrderId()));
+            sellOrderBooks.get(instrumentCode).removeIf(o -> o.getOrderId().equals(messageData.getOrderId()));
     }
 
-    private void matchOrder(Order incomingOrder, PriorityQueue<Order> oppositeQueue, PriorityQueue<Order> sameQueue, boolean isBuy)
+    private void matchOrder(MessageData incomingMessageData, PriorityQueue<MessageData> oppositeQueue, PriorityQueue<MessageData> sameQueue, boolean isBuy)
     {
-        while (!oppositeQueue.isEmpty() && incomingOrder.getPending() > 0)
+        while (!oppositeQueue.isEmpty() && incomingMessageData.getPending() > 0)
         {
-            Order matchingOrder = oppositeQueue.peek();
+            MessageData matchingMessageData = oppositeQueue.peek();
 
-            boolean canTrade = isBuy ? incomingOrder.getPrice() >= matchingOrder.getPrice() : incomingOrder.getPrice() <= matchingOrder.getPrice();
+            boolean canTrade = isBuy ? incomingMessageData.getPrice() >= matchingMessageData.getPrice() : incomingMessageData.getPrice() <= matchingMessageData.getPrice();
 
             if (canTrade)
             {
-                int tradeQuantity = Math.min(incomingOrder.getPending(), matchingOrder.getPending());
+                int tradeQuantity = Math.min(incomingMessageData.getPending(), matchingMessageData.getPending());
 
-                incomingOrder.setPending(incomingOrder.getPending() - tradeQuantity);
-                incomingOrder.setExecuted(incomingOrder.getExecuted() + tradeQuantity);
-                matchingOrder.setPending(matchingOrder.getPending() - tradeQuantity);
-                matchingOrder.setExecuted(matchingOrder.getExecuted() + tradeQuantity);
+                incomingMessageData.setPending(incomingMessageData.getPending() - tradeQuantity);
+                incomingMessageData.setExecuted(incomingMessageData.getExecuted() + tradeQuantity);
+                matchingMessageData.setPending(matchingMessageData.getPending() - tradeQuantity);
+                matchingMessageData.setExecuted(matchingMessageData.getExecuted() + tradeQuantity);
 
-                ampsMessageOutboundProcessor.sendExecutionToOMS(incomingOrder, tradeQuantity);
-                ampsMessageOutboundProcessor.sendExecutionToOMS(matchingOrder, tradeQuantity);
+                ampsMessageOutboundProcessor.sendExecutionToOMS(incomingMessageData, tradeQuantity);
+                ampsMessageOutboundProcessor.sendExecutionToOMS(matchingMessageData, tradeQuantity);
 
                 logger.info("Order matched: Incoming ID={} matched ID={}, incoming order executed: {}, incoming order pending: {}, matching order pending: {}",
-                    incomingOrder.getOrderId(), matchingOrder.getOrderId(), tradeQuantity, incomingOrder.getPending(), matchingOrder.getPending());
+                    incomingMessageData.getOrderId(), matchingMessageData.getOrderId(), tradeQuantity, incomingMessageData.getPending(), matchingMessageData.getPending());
 
-                if (Order.isFullyFilled(matchingOrder))
+                if (MessageData.isFullyFilled(matchingMessageData))
                     oppositeQueue.poll();
             }
             else
                 break;
         }
 
-        if (incomingOrder.getPending() > 0)
-            sameQueue.add(incomingOrder);
+        if (incomingMessageData.getPending() > 0)
+            sameQueue.add(incomingMessageData);
     }
 }

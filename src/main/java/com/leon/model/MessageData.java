@@ -23,10 +23,10 @@ import java.util.Locale;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
-@Document(collection = "Orders")
-public class Order
+@Document(collection = "MessageData")
+public class MessageData
 {
-    private static final Logger log = LoggerFactory.getLogger(Order.class);
+    private static final Logger log = LoggerFactory.getLogger(MessageData.class);
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("h:mm:ss a", Locale.ENGLISH);
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("M/d/yyyy", Locale.ENGLISH);
     private static final ObjectMapper MAPPER;
@@ -103,29 +103,30 @@ public class Order
     private String currentSource;
     private String targetSource;
     private MessageType messageType;
+    private int version;
     private LocalTime executedTime;
 
-    public static boolean isParentOrder(Order order)
+    public static boolean isParentOrder(MessageData messageData)
     {
-        return order.getParentOrderId().equals(order.getOrderId());
+        return messageData.getParentOrderId().equals(messageData.getOrderId());
     }
-    public static boolean isChildOrder(Order order)
+    public static boolean isChildOrder(MessageData messageData)
     {
-        return !order.getParentOrderId().equals(order.getOrderId());
+        return !messageData.getParentOrderId().equals(messageData.getOrderId());
     }
-    public static boolean isExecution(Order order)
+    public static boolean isExecution(MessageData messageData)
     {
-        return order.getMessageType() == MessageType.EXECUTION_REPORT;
-    }
-
-    public static boolean isFullyFilled(Order childOrder)
-    {
-        return childOrder.getPending() == 0 && childOrder.getExecuted() == childOrder.getQuantity();
+        return messageData.getMessageType() == MessageType.EXECUTION_REPORT;
     }
 
-    public static boolean isPartiallyFilled(Order childOrder)
+    public static boolean isFullyFilled(MessageData messageData)
     {
-        return childOrder.getPending() > 0 && childOrder.getExecuted() > 0 && childOrder.getExecuted() < childOrder.getQuantity();
+        return messageData.getPending() == 0 && messageData.getExecuted() == messageData.getQuantity();
+    }
+
+    public static boolean isPartiallyFilled(MessageData messageData)
+    {
+        return messageData.getPending() > 0 && messageData.getExecuted() > 0 && messageData.getExecuted() < messageData.getQuantity();
     }
 
     public String toJSON()

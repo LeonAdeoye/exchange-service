@@ -2,7 +2,7 @@ package com.leon.messaging;
 
 import com.crankuptheamps.client.Client;
 import com.leon.model.MessageType;
-import com.leon.model.Order;
+import com.leon.model.MessageData;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,43 +41,43 @@ public class AmpsMessageOutboundProcessor
         }
     }
 
-    public void sendExecutionToOMS(Order order, int tradedQuantity)
+    public void sendExecutionToOMS(MessageData messageData, int tradedQuantity)
     {
-        Order execution = new Order();
+        MessageData execution = new MessageData();
         try
         {
             execution.setMessageType(MessageType.EXECUTION_REPORT);
-            execution.setParentOrderId(order.getOrderId());
-            execution.setPrice(order.getPrice());
-            execution.setInstrumentCode(order.getInstrumentCode());
+            execution.setParentOrderId(messageData.getOrderId());
+            execution.setPrice(messageData.getPrice());
+            execution.setInstrumentCode(messageData.getInstrumentCode());
             execution.setQuantity(tradedQuantity);
-            execution.setSide(order.getSide());
+            execution.setSide(messageData.getSide());
             execution.setOrderId(UUID.randomUUID().toString());
             execution.setExecutedTime(LocalTime.now());
             execution.setTradeDate(LocalDate.now());
             execution.setCurrentSource("EXCHANGE_SERVICE");
             execution.setTargetSource("ORDER_MANAGEMENT_SERVICE");
             ampsClient.publish(outboundExchangeTopic, execution.toJSON());
-            log.info("Published execution message: {}", order);
+            log.info("Published execution message: {}", messageData);
         }
         catch (Exception e)
         {
-            log.error("ERR-902: Failed to publish execution message for order: {}", order, e);
+            log.error("ERR-902: Failed to publish execution message for order: {}", messageData, e);
         }
     }
 
-    public void sendOrderToOMS(Order order)
+    public void sendOrderToOMS(MessageData messageData)
     {
         try
         {
-            order.setCurrentSource("EXCHANGE_SERVICE");
-            order.setTargetSource("ORDER_MANAGEMENT_SERVICE");
-            ampsClient.publish(outboundExchangeTopic, order.toJSON());
-            log.info("Published order message: {}", order);
+            messageData.setCurrentSource("EXCHANGE_SERVICE");
+            messageData.setTargetSource("ORDER_MANAGEMENT_SERVICE");
+            ampsClient.publish(outboundExchangeTopic, messageData.toJSON());
+            log.info("Published message data: {}", messageData);
         }
         catch (Exception e)
         {
-            log.error("ERR-902: Failed to publish order message for order: {}", order, e);
+            log.error("ERR-902: Failed to publish message data: {} due to exception: {}", messageData, e);
         }
     }
 }

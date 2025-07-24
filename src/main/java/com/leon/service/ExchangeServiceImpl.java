@@ -1,6 +1,6 @@
 package com.leon.service;
 
-import com.leon.model.Order;
+import com.leon.model.MessageData;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
@@ -16,12 +16,12 @@ public class ExchangeServiceImpl
     private static final Logger logger = LoggerFactory.getLogger(ExchangeServiceImpl.class);
     private static int countOfOrders = 0;
     @Autowired
-    private final OrderEventHandler orderEventHandler;
+    private final MessageEventHandler messageEventHandler;
     @Autowired
     private DisruptorService disruptorService;
     @PostConstruct
     public void initialize() {
-        disruptorService.start("ExchangeService", orderEventHandler);
+        disruptorService.start("ExchangeService", messageEventHandler);
     }
     @PreDestroy
     public void shutdown()
@@ -30,28 +30,28 @@ public class ExchangeServiceImpl
         disruptorService.stop();
     }
 
-    public void processOrder(Order order)
+    public void processOrder(MessageData messageData)
     {
         try
         {
             countOfOrders++;
-            if(!isValidOrder(order)) {
-                logger.error("Invalid order: {}", order);
+            if(!isValidOrder(messageData)) {
+                logger.error("Invalid order: {}", messageData);
                 return;
             }
-            disruptorService.push(order);
+            disruptorService.push(messageData);
         }
         catch (Exception e)
         {
-            logger.error("Error processing order: {}", order, e);
+            logger.error("Error processing order: {}", messageData, e);
         }
     }
 
-    private static boolean isValidOrder(Order order)
+    private static boolean isValidOrder(MessageData messageData)
     {
-        if (order.getQuantity() <= 0)
+        if (messageData.getQuantity() <= 0)
             return false;
-        if (order.getPrice() <= 0)
+        if (messageData.getPrice() <= 0)
             return false;
         return true;
     }
