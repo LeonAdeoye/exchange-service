@@ -47,6 +47,7 @@ public class AmpsMessageOutboundProcessor
         try
         {
             execution.setMessageType(MessageType.EXECUTION_REPORT);
+            execution.setVersion(1);
             execution.setParentOrderId(messageData.getOrderId());
             execution.setPrice(messageData.getPrice());
             execution.setInstrumentCode(messageData.getInstrumentCode());
