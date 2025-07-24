@@ -11,7 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
 import java.util.Optional;
 
 @Component
@@ -24,13 +23,12 @@ public class MessageEventHandler implements EventHandler<MessageEvent>
     @Autowired
     private AmpsMessageOutboundProcessor ampsMessageOutboundProcessor;
 
-
     @Override
     public void onEvent(MessageEvent event, long sequence, boolean endOfBatch)
     {
         try
         {
-            processMessage(event.getMessageData());
+            process(event.getMessageData());
         }
         catch(Exception e)
         {
@@ -38,7 +36,7 @@ public class MessageEventHandler implements EventHandler<MessageEvent>
         }
     }
 
-    private void processMessage(MessageData messageData)
+    private void process(MessageData messageData)
     {
         if(messageData.getState() == OrderStates.PENDING_EXCH)
         {

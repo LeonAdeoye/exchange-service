@@ -52,6 +52,7 @@ public class AmpsMessageOutboundProcessor
             execution.setPrice(messageData.getPrice());
             execution.setInstrumentCode(messageData.getInstrumentCode());
             execution.setQuantity(tradedQuantity);
+            execution.setExecuted(tradedQuantity);
             execution.setSide(messageData.getSide());
             execution.setOrderId(UUID.randomUUID().toString());
             execution.setExecutedTime(LocalTime.now());
