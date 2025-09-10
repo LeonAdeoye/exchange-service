@@ -2,6 +2,7 @@ package com.leon.service;
 
 import com.leon.messaging.AmpsMessageOutboundProcessor;
 import com.leon.model.MessageData;
+import com.leon.model.PriceTypeEnum;
 import com.leon.model.Side;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,6 +56,9 @@ public class OrderMatchingServiceImpl implements OrderMatchingService
         while (!oppositeQueue.isEmpty() && incomingMessageData.getPending() > 0)
         {
             MessageData matchingMessageData = oppositeQueue.peek();
+
+            if(incomingMessageData.getPriceType().equals(PriceTypeEnum.MARKET_ORDER))
+                incomingMessageData.setPrice(matchingMessageData.getPrice());
 
             boolean canTrade = isBuy ? incomingMessageData.getPrice() >= matchingMessageData.getPrice() : incomingMessageData.getPrice() <= matchingMessageData.getPrice();
 
