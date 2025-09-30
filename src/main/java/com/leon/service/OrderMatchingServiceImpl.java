@@ -19,6 +19,8 @@ public class OrderMatchingServiceImpl implements OrderMatchingService
     private static final Logger logger = LoggerFactory.getLogger(OrderMatchingServiceImpl.class);
     @Autowired
     private AmpsMessageOutboundProcessor ampsMessageOutboundProcessor;
+    @Autowired
+    private MarketDataService marketDataService;
 
     private Comparator<MessageData> buyOrderComparator = Comparator
             .comparingDouble(MessageData::getPrice).reversed()
@@ -51,16 +53,30 @@ public class OrderMatchingServiceImpl implements OrderMatchingService
             sellOrderBooks.get(instrumentCode).removeIf(o -> o.getOrderId().equals(messageData.getOrderId()));
     }
 
+    private double handleMarketOrderPricing(MessageData incomingOrder, boolean isBuy)
+    {
+        String instrumentCode = incomingOrder.getInstrumentCode();
+        return isBuy ? marketDataService.getAskPrice(instrumentCode) : marketDataService.getBidPrice(instrumentCode);
+    }
+
     private void matchOrder(MessageData incomingMessageData, PriorityQueue<MessageData> oppositeQueue, PriorityQueue<MessageData> sameQueue, boolean isBuy)
     {
         while (!oppositeQueue.isEmpty() && incomingMessageData.getPending() > 0)
         {
             MessageData matchingMessageData = oppositeQueue.peek();
 
-            if(incomingMessageData.getPriceType().equals(PriceTypeEnum.MARKET_ORDER))
+            if(incomingMessageData.getPriceType().equals(PriceTypeEnum.MARKET_ORDER) && !matchingMessageData.getPriceType().equals(PriceTypeEnum.MARKET_ORDER))
                 incomingMessageData.setPrice(matchingMessageData.getPrice());
+            else if(incomingMessageData.getPriceType().equals(PriceTypeEnum.MARKET_ORDER) && matchingMessageData.getPriceType().equals(PriceTypeEnum.MARKET_ORDER))
+                incomingMessageData.setPrice(handleMarketOrderPricing(incomingMessageData, isBuy));
 
-            boolean canTrade = isBuy ? incomingMessageData.getPrice() >= matchingMessageData.getPrice() : incomingMessageData.getPrice() <= matchingMessageData.getPrice();
+            double incomingPrice = incomingMessageData.getPrice();
+            double matchingPrice = matchingMessageData.getPrice();
+
+            if (matchingMessageData.getPriceType().equals(PriceTypeEnum.MARKET_ORDER) && matchingMessageData.getPrice() == 0.0)
+                matchingPrice = incomingPrice;
+
+            boolean canTrade = isBuy ? incomingPrice >= matchingPrice : incomingPrice <= matchingPrice;
 
             if (canTrade)
             {
