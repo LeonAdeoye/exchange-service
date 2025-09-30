@@ -42,7 +42,6 @@ public class MarketDataServiceImpl implements MarketDataService
     @Override
     public void subscribe(String instrumentCode)
     {
-        logger.info("Subscribing to market data for instrument: {}", instrumentCode);
         if (subscriptions.getOrDefault(instrumentCode, false))
         {
             logger.warn("Already subscribed to instrument: {}", instrumentCode);
@@ -55,12 +54,11 @@ public class MarketDataServiceImpl implements MarketDataService
         if (response.getSuccess())
         {
             subscriptions.put(instrumentCode, true);
-            logger.info("Successfully subscribed to instrument: {}", instrumentCode);
             subscriptionExecutor.submit(() -> 
             {
                 try
                 {
-                    logger.info("Started AMPS listening for instrument: {}", instrumentCode);
+                    // AMPS listening started silently
                 }
                 catch (Exception e)
                 {
@@ -104,8 +102,8 @@ public class MarketDataServiceImpl implements MarketDataService
 
     public void updatePricesFromMarketData(MarketData marketData)
     {
-        String ric = marketData.getRic();
-        Double marketPrice = marketData.getPrice();
+        String ric = marketData.ric();
+        Double marketPrice = marketData.price();
         
         if (marketPrice == null || marketPrice <= 0)
         {

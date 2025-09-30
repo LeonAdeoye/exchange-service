@@ -26,8 +26,6 @@ public class MarketServiceClient
     {
         try
         {
-            logger.info("Subscribing to market data for RICs: {}", request.getRics());
-            
             SubscriptionResponse response = webClient.post()
                     .uri(baseUrl + "/subscribe")
                     .bodyValue(request)
@@ -35,7 +33,6 @@ public class MarketServiceClient
                     .bodyToMono(SubscriptionResponse.class)
                     .block();
             
-            logger.info("Subscription response: {}", response);
             return response;
             
         }
