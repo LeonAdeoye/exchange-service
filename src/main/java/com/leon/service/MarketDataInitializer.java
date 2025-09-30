@@ -23,17 +23,8 @@ public class MarketDataInitializer
     {
         try
         {
-            logger.info("Starting market data subscription for all instruments...");
             List<Instrument> instruments = instrumentRepository.findAll();
-            logger.info("Loaded {} instruments from MongoDB", instruments.size());
-            
-            if (instruments.isEmpty())
-            {
-                logger.warn("No instruments found in MongoDB. Initializing sample instruments...");
-                initializeSampleInstruments();
-                instruments = instrumentRepository.findAll();
-                logger.info("After initialization: {} instruments loaded", instruments.size());
-            }
+            logger.info("Loaded {} instruments for market data subscription.", instruments.size());
             int successCount = 0;
             int failureCount = 0;
 
@@ -56,32 +47,6 @@ public class MarketDataInitializer
         catch (Exception e)
         {
             logger.error("Error during market data initialization", e);
-        }
-    }
-    
-    private void initializeSampleInstruments()
-    {
-        try
-        {
-            // Create some sample instruments
-            Instrument[] sampleInstruments = {
-                new Instrument("AAPL"),
-                new Instrument("MSFT"),
-                new Instrument("GOOGL"),
-                new Instrument("TSLA"),
-                new Instrument("AMZN")
-            };
-            
-            for (Instrument instrument : sampleInstruments)
-            {
-                instrumentRepository.save(instrument);
-            }
-            
-            logger.info("Initialized {} sample instruments", sampleInstruments.length);
-        }
-        catch (Exception e)
-        {
-            logger.error("Failed to initialize sample instruments", e);
         }
     }
 }
