@@ -89,9 +89,9 @@ public class OrderMatchingServiceImpl implements OrderMatchingService
 
                 ampsMessageOutboundProcessor.sendExecutionToOMS(incomingMessageData, tradeQuantity, incomingMessageData.getPrice());
                 if(matchingMessageData.getPriceType().equals(PriceTypeEnum.MARKET_ORDER) && matchingMessageData.getPrice() == 0.0)
-                    ampsMessageOutboundProcessor.sendExecutionToOMS(matchingMessageData, tradeQuantity, incomingMessageData.getPrice());
+                    ampsMessageOutboundProcessor.sendExecutionToOMS(matchingMessageData, tradeQuantity, incomingPrice);
                 else
-                    ampsMessageOutboundProcessor.sendExecutionToOMS(matchingMessageData, tradeQuantity, matchingMessageData.getPrice());
+                    ampsMessageOutboundProcessor.sendExecutionToOMS(matchingMessageData, tradeQuantity, matchingPrice);
 
                 logger.info("Order matched: Incoming ID={} matched ID={}, incoming order executed: {}, incoming order pending: {}, matching order pending: {}",
                     incomingMessageData.getOrderId(), matchingMessageData.getOrderId(), tradeQuantity, incomingMessageData.getPending(), matchingMessageData.getPending());
