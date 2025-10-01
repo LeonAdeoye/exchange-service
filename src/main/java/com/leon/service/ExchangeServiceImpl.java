@@ -51,7 +51,7 @@ public class ExchangeServiceImpl
     {
         if (messageData.getQuantity() <= 0)
             return false;
-        if (messageData.getPrice() <= 0)
+        if (messageData.getPrice() < 0)
             return false;
         return true;
     }
