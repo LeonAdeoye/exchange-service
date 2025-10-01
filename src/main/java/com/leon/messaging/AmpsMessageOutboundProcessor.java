@@ -41,7 +41,7 @@ public class AmpsMessageOutboundProcessor
         }
     }
 
-    public void sendExecutionToOMS(MessageData messageData, int tradedQuantity)
+    public void sendExecutionToOMS(MessageData messageData, int tradedQuantity, double price)
     {
         MessageData execution = new MessageData();
         try
@@ -49,7 +49,7 @@ public class AmpsMessageOutboundProcessor
             execution.setMessageType(MessageType.EXECUTION_REPORT);
             execution.setVersion(1);
             execution.setParentOrderId(messageData.getOrderId());
-            execution.setPrice(messageData.getPrice());
+            execution.setPrice(price);
             execution.setInstrumentCode(messageData.getInstrumentCode());
             execution.setQuantity(tradedQuantity);
             execution.setExecuted(tradedQuantity);

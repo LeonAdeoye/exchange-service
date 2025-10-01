@@ -141,4 +141,18 @@ public class MessageData
             throw new RuntimeException("Failed to convert to JSON", e);
         }
     }
+
+    public static MessageData clone(MessageData other)
+    {
+        try
+        {
+            String json = other.toJSON();
+            return MAPPER.readValue(json, MessageData.class);
+        }
+        catch (JsonProcessingException e)
+        {
+            log.error("Failed to clone MessageData: {}", other, e);
+            throw new RuntimeException("Failed to clone MessageData", e);
+        }
+    }
 }
